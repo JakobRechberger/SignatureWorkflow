@@ -9,6 +9,7 @@ import org.bouncycastle.tsp.TimeStampResponse;
 import org.bouncycastle.tsp.TimeStampToken;
 import org.bouncycastle.tsp.TimeStampTokenInfo;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.security.MessageDigest;
@@ -19,19 +20,18 @@ import java.security.cert.X509Certificate;
 import java.util.Arrays;
 
 public class TimestampValidator {
-    public static void verifyTimestamp(String filePath, String tsrFilePath) {
+    public static String verifyTimestamp(File file, File tsrFile) {
         try {
-            //compare hash of file to hash retrieved from timestamped file
+            StringBuilder responseString = new StringBuilder();
             Security.addProvider(new BouncyCastleProvider());
-            byte[] fileHash = FileHashGenerator.generateSHA256Hash(filePath);
-            TimeStampResponse tsResponse = TimestampLoader.loadTimestampResponse(tsrFilePath);
+            byte[] fileHash = FileHashGenerator.generateSHA256Hash(file);
+            TimeStampResponse tsResponse = TimestampLoader.loadTimestampResponse(tsrFile);
             TimeStampToken tsToken = tsResponse.getTimeStampToken();
             TimeStampTokenInfo tsInfo = tsToken.getTimeStampInfo();
             if (!MessageDigest.isEqual(fileHash, tsInfo.getMessageImprintDigest())) {
-                throw new TSPException("The timestamp does not match the original file hash.");
+                return("The timestamp does not match the original file hash.");
             }
-            System.out.println("The timestamp matches the original file hash.");
-
+            responseString.append("The timestamp matches the original file hash.\n");
             //load tsa.crt of timestamp issuer (X.509Certificate from https://freetsa.org/index_de.php) and verify with timestamp
             FileInputStream fis = new FileInputStream("tsa.crt");
             CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
@@ -43,18 +43,22 @@ public class TimestampValidator {
                     .setProvider("BC")
                     .build(tsaCertHolder);
             tsToken.validate(verifier);
+            responseString.append("The timestamp token is valid and was issued by the trusted TSA.\n");
             System.out.println("The timestamp token is valid and was issued by the trusted TSA.");
             System.out.println("Timestamped at: " + tsInfo.getGenTime());
+            responseString.append("Timestamped at: ").append(tsInfo.getGenTime());
+            return responseString.toString();
 
         } catch (Exception e) {
             System.err.println("Timestamp verification failed: " + e.getMessage());
             e.printStackTrace();
         }
+        return "A Problem has occured. Please try again!";
 }
     public static void main(String[] args) {
-        String filePath = "C:\\Users\\jakob\\IdeaProjects\\BlockchainTest.zip";
-        String tsrFilePath = "C:\\Users\\jakob\\IdeaProjects\\timestamp.tsr";
+        String filePath = "C:\\Users\\jakob\\Documents\\hello.txt";
+        String tsrFilePath = "C:\\Users\\jakob\\IdeaProjects\\SignatureWorkflow\\uploads\\timestamped_timestamped_file.tsr";
 
-        verifyTimestamp(filePath, tsrFilePath);
+        //verifyTimestamp(filePath, tsrFilePath);
     }
 }

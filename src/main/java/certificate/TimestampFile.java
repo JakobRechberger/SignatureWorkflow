@@ -11,15 +11,15 @@ public class TimestampFile {
             File directoryPath = new File(new File(filePath).getParent());
             String outputTimestampFile = directoryPath + "\\timestamp.tsr";
 
-            byte[] fileHash = FileHashGenerator.generateSHA256Hash(filePath);
+            //byte[] fileHash = FileHashGenerator.generateSHA256Hash(filePath);
 
-            TimeStampRequest tsRequest = TimestampRequestGenerator.createTimestampRequest(fileHash);
+            //TimeStampRequest tsRequest = TimestampRequestGenerator.createTimestampRequest(fileHash);
 
-            TimeStampResponse tsResponse = TimestampServiceClient.sendTimestampRequest(tsRequest);
+            //TimeStampResponse tsResponse = TimestampServiceClient.sendTimestampRequest(tsRequest);
 
-            TimestampResponseSaver.saveTimestampResponse(tsResponse, outputTimestampFile);
+            //TimestampResponseSaver.saveTimestampResponse(tsResponse, outputTimestampFile);
 
-            System.out.println("Timestamp response saved to " + outputTimestampFile);
+            //System.out.println("Timestamp response saved to " + outputTimestampFile);
 
         } catch (Exception e) {
             e.printStackTrace();
