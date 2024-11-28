@@ -46,6 +46,8 @@ public class TimestampValidator {
             responseString.append("The timestamp token is valid and was issued by the trusted TSA.\n");
             System.out.println("The timestamp token is valid and was issued by the trusted TSA.");
             System.out.println("Timestamped at: " + tsInfo.getGenTime());
+            System.out.println("TimestampAuthority: " + tsInfo.getTsa());
+            responseString.append("TimestampAuthority: ").append(tsInfo.getTsa());
             responseString.append("Timestamped at: ").append(tsInfo.getGenTime());
             return responseString.toString();
 
