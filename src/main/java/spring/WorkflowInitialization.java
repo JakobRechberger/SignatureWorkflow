@@ -1,37 +1,31 @@
 package spring;
 
-import database.models.Link;
-import database.models.Project;
+
 import database.service.LinkService;
 import database.service.ProjectRequest;
 import database.service.ProjectService;
-import org.apache.tomcat.util.http.fileupload.FileUtils;
-import org.aspectj.util.FileUtil;
+
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
-import org.springframework.http.HttpHeaders;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
+
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+
+import static sha256.SHA256Methods.generateSHA256Hash;
+import static sha256.SHA256Methods.hashToHexString;
 
 @RestController
 @RequestMapping("/api")
@@ -71,7 +65,8 @@ public class WorkflowInitialization {
             //Step 5: set up review process: mail to contributors with hash value, generate unique links
             ProjectRequest payload = new ProjectRequest(repositoryName, hashToHexString(zipFileHash), zipFileData, contributors.stream().toList());
             projectService.createProjectWithUsers(payload);
-            //send email
+
+
 
             deleteDirectory(tempDir);
             deleteDirectory(zipFile);
@@ -90,68 +85,6 @@ public class WorkflowInitialization {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("An error occurred: " + e.getMessage());
         }
-    }
-
-    @GetMapping("/contributor")
-    public ResponseEntity<String> validateToken(@RequestParam String token) {
-        try{
-            Link link = linkService.getLinksByToken(token)
-                    .stream()
-                    .findFirst()
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid token"));
-            String response = "Token is valid for contributor: " +
-                    link.getUser().getEmail() +
-                    " with timestamp: " +
-                    link.getExpiryTimestamp() +
-                    " for project ID: " +
-                    link.getProject().getFileName();
-            return ResponseEntity.ok(response);
-        }
-         catch (ResponseStatusException ex) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body("Invalid token: " + ex.getReason());
-        } catch (Exception ex) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("An unexpected error occurred: " + ex.getMessage());
-        }
-    }
-
-    @GetMapping("/contributor/downloadFile")
-    public ResponseEntity<Resource> testFile(@RequestParam String token) throws IOException, NoSuchAlgorithmException {
-
-        Link link = linkService.getLinksByToken(token)
-                .stream()
-                .findFirst()
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid token"));
-
-        byte[] storedZipData = link.getProject().getFileData();
-        String storedHash = link.getProject().getFileHash();
-        LocalDateTime timestamp = link.getExpiryTimestamp();
-        if(!timestamp.isAfter(LocalDateTime.now())){
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Token no longer valid");
-        }
-
-        if (storedZipData == null || storedZipData.length == 0) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No file data available for this token");
-        }
-        byte[] recalculatedHash = generateSHA256Hash(storedZipData);
-        String recalculatedHashString = hashToHexString(recalculatedHash);
-
-        if (!storedHash.equals(recalculatedHashString)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File integrity validation failed");
-        }
-
-        File reconstructedZipFile = File.createTempFile("reconstructed_repository", ".zip");
-        Files.write(reconstructedZipFile.toPath(), storedZipData);
-
-        ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(reconstructedZipFile.toPath()));
-
-        // Build and return the response
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"repository_to_audit_" + link.getProject().getFileName() + ".zip\"")
-                .contentLength(storedZipData.length)
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .body(resource);
     }
 
 
@@ -239,25 +172,6 @@ public class WorkflowInitialization {
                             e.printStackTrace();
                         }
                     });
-        }
-    }
-    private static String hashToHexString(byte[] hash){
-        StringBuilder hexString = new StringBuilder();
-        for (byte b : hash) {
-            String hex = Integer.toHexString(0xff & b);
-            if (hex.length() == 1) {
-                hexString.append('0');
-            }
-            hexString.append(hex);
-        }
-        return hexString.toString();
-    }
-    public byte[] generateSHA256Hash(byte[] data) throws IOException {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            return digest.digest(data);
-        } catch (NoSuchAlgorithmException e) {
-            throw new IOException("Failed to calculate hash", e);
         }
     }
 
