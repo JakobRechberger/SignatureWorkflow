@@ -1,13 +1,19 @@
 package spring;
 
+import certificate.TimestampRequestGenerator;
+import certificate.TimestampResponseSaver;
+import certificate.TimestampServiceClient;
 import database.models.Link;
 import database.models.User;
 import database.service.LinkService;
 import database.service.ProjectService;
 import database.service.UserService;
 import database.service.UserSignatureRequest;
+import org.bouncycastle.tsp.TimeStampRequest;
+import org.bouncycastle.tsp.TimeStampResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -22,10 +28,12 @@ import signandVerify.VerificationTemp;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static certificate.TimestampValidator.verifyTimestamp;
 import static sha256.SHA256Methods.hashToHexString;
 import static sha256.SHA256Methods.generateSHA256Hash;
 
@@ -62,7 +70,7 @@ public class WorkflowContributor {
     }
 
     @GetMapping("/contributor/downloadFile")
-    public ResponseEntity<Resource> testFile(@RequestParam String token) throws IOException, NoSuchAlgorithmException {
+    public ResponseEntity<Resource> testFile(@RequestParam String token) throws IOException {
 
         Link link = linkService.getLinksByToken(token)
                 .stream()
@@ -100,7 +108,7 @@ public class WorkflowContributor {
     }
 
     @PostMapping ("/contributor/signProject")
-    public ResponseEntity<String> getSignature(@RequestParam("token") String token, @RequestParam("project") MultipartFile multipartFile) throws IOException {
+    public ResponseEntity<String> getSignature(@RequestParam("token") String token, @RequestParam("project") MultipartFile multipartFile) throws Exception {
         Link link = linkService.getLinksByToken(token)
                 .stream()
                 .findFirst()
@@ -114,14 +122,26 @@ public class WorkflowContributor {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File integrity validation failed");
         }
         List<File> signatureFiles = SignatureTemp.signFile(tempFile);
+        byte[] timestampFile;
+
         UserSignatureRequest request = new UserSignatureRequest();
         if(signatureFiles != null){
-            request.setSignature(Files.readAllBytes(signatureFiles.get(0).toPath()));
-            request.setPublicKey(Files.readAllBytes(signatureFiles.get(1).toPath()));
-            request.setLink(link);
-            userService.setUserSignature(request);
-            System.out.println("User successfully updated");
-            return ResponseEntity.ok("User updated successfully for token: " + token);
+            try{
+                MessageDigest digest = MessageDigest.getInstance("SHA-256");
+                TimeStampRequest tsRequest = TimestampRequestGenerator.createTimestampRequest(digest.digest(Files.readAllBytes(signatureFiles.get(0).toPath())));
+                TimeStampResponse tsResponse = TimestampServiceClient.sendTimestampRequest(tsRequest);
+                timestampFile = Files.readAllBytes(TimestampResponseSaver.saveTimestampResponse(tsResponse).toPath());
+                request.setSignature(Files.readAllBytes(signatureFiles.get(0).toPath()));
+                request.setPublicKey(Files.readAllBytes(signatureFiles.get(1).toPath()));
+                request.setTimestamp(timestampFile);
+                request.setLink(link);
+                userService.setUserSignature(request);
+                System.out.println("User successfully updated");
+                return ResponseEntity.ok("User updated successfully for token: " + token);
+            }
+            catch(Exception e){
+                e.printStackTrace();
+            }
         }
         return ResponseEntity.ok("Failed to upload signature");
 
@@ -137,16 +157,23 @@ public class WorkflowContributor {
         return ResponseEntity.ok("User updated successfully for token: " + token);
     }
     @PostMapping("/contributor/verifySignature")
-    public ResponseEntity<String> verifySignature(@RequestParam("token") String token){
+    public ResponseEntity<String> verifySignature(@RequestParam("token") String token) throws IOException {
         Link link = linkService.getLinksByToken(token)
                 .stream()
                 .findFirst()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid token"));
         byte[] signature = link.getUser().getSignature();
         byte[] publickey = link.getUser().getPublicKey();
+        byte[] timestamp = link.getUser().getTimestamp();
         byte[] project = link.getProject().getFileData();
+        File tempSignatureFile = File.createTempFile("signature", "");
+        File tempTimestampFile = File.createTempFile("timestamp", ".tsr");
+        Files.write(tempSignatureFile.toPath(), signature );
+        Files.write(tempTimestampFile.toPath(), timestamp );
+        String response = verifyTimestamp( tempSignatureFile,  tempTimestampFile);
         if(VerificationTemp.verifySignature(project, signature, publickey)){
-            return ResponseEntity.ok("Signature valid for user: " + link.getUser().getEmail() + " for project:" + link.getProject().getFileName());
+            return ResponseEntity.ok("Signature valid for user: " + link.getUser().getEmail() + " for project:" + link.getProject().getFileName() +
+                    "\n Timestamp validated with: " + response);
         }
         else{
             return ResponseEntity.ok("Signature verification failed for user: " + link.getUser().getEmail() + " for project:" + link.getProject().getFileName());

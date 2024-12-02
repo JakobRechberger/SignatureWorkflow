@@ -22,6 +22,10 @@ public class User {
     @Column(name = "public_key", columnDefinition = "BLOB")
     private byte[] publicKey;
 
+    @Lob
+    @Column(name = "timestamp", columnDefinition = "BLOB")
+    private byte[] timestamp;
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Link> users = new ArrayList<>();
 
@@ -54,6 +58,13 @@ public class User {
 
     public void setPublicKey(byte[] publicKey) {
         this.publicKey = publicKey;
+    }
+    public byte[] getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(byte[] timestamp) {
+        this.timestamp = timestamp;
     }
 
 }

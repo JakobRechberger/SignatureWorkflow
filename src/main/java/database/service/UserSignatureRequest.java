@@ -7,6 +7,7 @@ public class UserSignatureRequest {
     private Link link;
     private byte[] signature;
     private byte[] publicKey;
+    private byte[] timestamp;
     public byte[] getSignature() {
         return signature;
     }
@@ -28,6 +29,13 @@ public class UserSignatureRequest {
 
     public void setLink(Link link) {
         this.link = link;
+    }
+    public byte[] getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(byte[] timestamp) {
+        this.timestamp = timestamp;
     }
 
 }

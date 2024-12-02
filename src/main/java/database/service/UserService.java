@@ -21,6 +21,7 @@ public class UserService {
         }
         user.setSignature(userSignatureRequest.getSignature());
         user.setPublicKey(userSignatureRequest.getPublicKey());
+        user.setTimestamp(userSignatureRequest.getTimestamp());
         userRepository.save(user);
     }
 }
