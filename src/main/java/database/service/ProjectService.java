@@ -25,8 +25,11 @@ public class ProjectService {
 
     @Autowired
     private LinkRepository linkRepository;
+
+    @Autowired
+    private EmailService emailService;
     @Transactional
-    public void createProjectWithUsers(ProjectRequest projectRequest) throws IOException {
+    public void createProjectWithUsers(ProjectRequest projectRequest)  {
         Project project = new Project();
         project.setFileName(projectRequest.getFileName());
         project.setFileHash(projectRequest.getFileHash());
@@ -44,9 +47,10 @@ public class ProjectService {
             link.setProject(project);
             link.setExpiryTimestamp(LocalDateTime.now().plusDays(7));
             linkRepository.save(link);
-
-            // 3. Send email to the user with the download link
-            String downloadUrl = "https://localhost:3000/api/contributor?token=" + token;
+            String downloadUrl = "http://localhost:3000/contributor?token=" + token;
+            String subject = "Verification needed for project";
+            String text = "Hello,\n please see the link:\n" + downloadUrl + "\nto verify the project. \nUse the hash for verfication: " + project.getFileHash();
+            emailService.sendEmail("testing.software0611@gmail.com", subject, text);
         }
     }
 

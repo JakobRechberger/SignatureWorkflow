@@ -3,6 +3,7 @@ package spring;
 import certificate.TimestampRequestGenerator;
 import certificate.TimestampResponseSaver;
 import certificate.TimestampServiceClient;
+import com.sun.mail.iap.Response;
 import database.models.Link;
 import database.models.User;
 import database.service.LinkService;
@@ -105,6 +106,18 @@ public class WorkflowContributor {
                 .contentLength(storedZipData.length)
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(resource);
+    }
+    @GetMapping("/contributor/verifyFileHash")
+    public ResponseEntity<String> verifyFileHash(@RequestParam("token") String token, @RequestParam("hash") String hash) {
+        Link link = linkService.getLinksByToken(token)
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid token"));
+        String storedHash = link.getProject().getFileHash();
+        if (!storedHash.equals(hash)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File integrity validation failed");
+        }
+    return ResponseEntity.ok("Hash validated. This project hasn't been manipulated");
     }
 
     @PostMapping ("/contributor/signProject")
