@@ -8,7 +8,6 @@ import java.util.Collections;
 public class OCSPValidator {
 
     public static void checkCertStatus(X509Certificate cert, X509Certificate issuerCert) throws Exception {
-        // Set OCSP URL (replace with the actual OCSP responder URL if needed)
         URI ocspUri = new URI("http://www.freetsa.org:2560");
 
         // Create OCSP request
@@ -18,7 +17,6 @@ public class OCSPValidator {
         PKIXParameters params = new PKIXParameters(Collections.singleton(trustAnchor));
         params.setRevocationEnabled(true);
 
-        // Check the certificate's revocation status using OCSP
         CertPathValidator certPathValidator = CertPathValidator.getInstance("PKIX");
         certPathValidator.validate(certPath, params);
 

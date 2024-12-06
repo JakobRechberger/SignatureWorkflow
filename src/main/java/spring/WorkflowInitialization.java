@@ -1,25 +1,32 @@
 package spring;
 
 
+import database.models.Link;
+import database.models.Project;
+import database.models.User;
+import database.models.UserDTO;
 import database.service.LinkService;
 import database.service.ProjectRequest;
 import database.service.ProjectService;
 
+import database.service.UserService;
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -35,6 +42,8 @@ public class WorkflowInitialization {
 
     @Autowired
     private LinkService linkService;
+    @Autowired
+    private UserService userService;
     @Transactional
     @PostMapping("/supervisor/initWorkflow")
     public ResponseEntity<String> handleGitRepository(
@@ -86,7 +95,33 @@ public class WorkflowInitialization {
                     .body("An error occurred: " + e.getMessage());
         }
     }
+    @GetMapping("/supervisor/getProjectStatus")
+    public ResponseEntity<List<UserDTO>> getProjectStatus(@RequestParam("repoName") String repoName){
+        Project project = projectService.getProjectByName(repoName)
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid Repo Name"));
+        List<Link> links = linkService.getLinksByProjectID(project.getId());
+        List<User> allUsersOfProject = links.stream()
+                .map(Link::getUser)
+                .toList();
+        List<UserDTO> userDTOs = allUsersOfProject.stream()
+                .map(user -> new UserDTO(
+                        user.getEmail(),
+                        user.getSignature() != null
+                )).toList();
+        if (allUsersOfProject.isEmpty()) {
+            return ResponseEntity.ok(Collections.emptyList());
+        }
+        return ResponseEntity.ok(userDTOs);
+    }
 
+    @GetMapping("/supervisor/resendEmail")
+    public ResponseEntity<String> resendEmailToContributor(@RequestParam("email") String email, @RequestParam("projectName") String projectName){
+        List<User> users = userService.getUserByEmail(email);
+
+        return ResponseEntity.ok("ok");
+    }
 
         private void cloneGitRepository(String repoUrl, File cloneDir) throws Exception {
         ProcessBuilder processBuilder = new ProcessBuilder("git", "clone", repoUrl, cloneDir.getAbsolutePath());

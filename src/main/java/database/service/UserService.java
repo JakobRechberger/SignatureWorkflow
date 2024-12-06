@@ -1,6 +1,7 @@
 package database.service;
 
 import database.models.Link;
+import database.models.Project;
 import database.models.User;
 import database.repository.LinkRepository;
 import database.repository.UserRepository;
@@ -8,6 +9,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.util.List;
+
 @Service
 public class UserService {
     @Autowired
@@ -23,5 +27,8 @@ public class UserService {
         user.setPublicKey(userSignatureRequest.getPublicKey());
         user.setTimestamp(userSignatureRequest.getTimestamp());
         userRepository.save(user);
+    }
+    public List<User> getUserByEmail(String email) {
+        return userRepository.findByUserEmail(email);
     }
 }

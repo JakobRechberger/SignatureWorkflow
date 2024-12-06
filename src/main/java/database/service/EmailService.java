@@ -20,7 +20,7 @@ public class EmailService {
         message.setTo(to);
         message.setSubject(subject);
         message.setText(body);
-        message.setFrom("");
+        message.setFrom("");//enter your email
         mailSender.send(message);
         System.out.println("Email sent successfully to " + to);
     }

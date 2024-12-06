@@ -12,4 +12,9 @@ import java.util.List;
 public interface LinkRepository extends JpaRepository<Link, Long> {
     @Query("SELECT l FROM Link l WHERE l.token = :token")
     List<Link> findByToken(@Param("token") String token);
+
+    @Query("SELECT l FROM Link l WHERE l.project.id = :id")
+    List<Link> findLinksByProjectID(@Param("id") Long id);
+    @Query("SELECT l FROM Link l WHERE l.user.id = :id")
+    Link findLinkByUserID(@Param("id") Long id);
 }

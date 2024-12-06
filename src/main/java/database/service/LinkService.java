@@ -20,4 +20,10 @@ public class LinkService {
     public List<Link> getLinksByToken(String token) {
         return linkRepository.findByToken(token);
     }
+    public List<Link> getLinksByProjectID(Long id) {
+        return linkRepository.findLinksByProjectID(id);
+    }
+    public Link getLinkByUserID(Long id) {
+        return linkRepository.findLinkByUserID(id);
+    }
 }
