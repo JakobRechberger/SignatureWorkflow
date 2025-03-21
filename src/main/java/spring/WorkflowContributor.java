@@ -53,6 +53,10 @@ public class WorkflowContributor {
                     .stream()
                     .findFirst()
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid token"));
+            LocalDateTime timestamp = link.getExpiryTimestamp();
+            if(!timestamp.isAfter(LocalDateTime.now())){
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Token no longer valid");
+            }
             String response = "Token is valid for contributor: " +
                     link.getUser().getEmail() +
                     " with timestamp: " +
@@ -121,24 +125,19 @@ public class WorkflowContributor {
     }
 
     @PostMapping ("/contributor/signProject")
-    public ResponseEntity<String> getSignature(@RequestParam("token") String token, @RequestParam("project") MultipartFile multipartFile) throws Exception {
+    public ResponseEntity<String> getSignature(@RequestParam("token") String token) throws Exception {
         Link link = linkService.getLinksByToken(token)
                 .stream()
                 .findFirst()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid token"));
-        String storedHash = link.getProject().getFileHash();
-        byte[] uploadedFileData = multipartFile.getBytes();
-        String uploadedHash = hashToHexString(generateSHA256Hash(uploadedFileData));
-        File tempFile = File.createTempFile("upload_", "_" + multipartFile.getOriginalFilename());
-        Files.write(tempFile.toPath(), uploadedFileData);
-        if (!storedHash.equals(uploadedHash)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File integrity validation failed");
-        }
+        byte[] project = link.getProject().getFileData();
+        File tempFile = File.createTempFile("upload_", "_" + link.getProject().getFileName());
+        Files.write(tempFile.toPath(), project);
         List<File> signatureFiles = SignatureTemp.signFile(tempFile);
         byte[] timestampFile;
 
         UserSignatureRequest request = new UserSignatureRequest();
-        if(signatureFiles != null){
+        if(signatureFiles != null && VerificationTemp.verifySignature(Files.readAllBytes(signatureFiles.get(0).toPath()), Files.readAllBytes(signatureFiles.get(1).toPath()), project)){
             try{
                 MessageDigest digest = MessageDigest.getInstance("SHA-256");
                 TimeStampRequest tsRequest = TimestampRequestGenerator.createTimestampRequest(digest.digest(Files.readAllBytes(signatureFiles.get(0).toPath())));

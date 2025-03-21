@@ -12,6 +12,25 @@
     <groupId>org.example</groupId>
     <artifactId>SignatureWorkflow</artifactId>
     <version>1.0-SNAPSHOT</version>
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>18</maven.compiler.source>
+        <maven.compiler.target>18</maven.compiler.target>
+        <maven.surefire.report.plugin.version>3.3.0</maven.surefire.report.plugin.version>
+        <junit.jupiter.version>5.9.2</junit.jupiter.version>
+        <maven.surefire.version>2.22.2</maven.surefire.version>
+        <org.junit.platform.version>1.2.0</org.junit.platform.version>
+        <openhtml.version>1.0.10</openhtml.version>
+        <commons.codec.version>1.16.0</commons.codec.version>
+        <org.apache.maven.shared.version>3.3.0</org.apache.maven.shared.version>
+        <org.apache.xmlgraphics.version>2.6</org.apache.xmlgraphics.version>
+        <com.openhtmltopdf.version>1.0.10</com.openhtmltopdf.version>
+        <org.benf.version>0.152</org.benf.version>
+        <timestamp>${maven.build.timestamp}</timestamp>
+        <maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
+        <maven.compiler.source>18</maven.compiler.source>
+        <maven.compiler.target>18</maven.compiler.target>
+    </properties>
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -63,20 +82,80 @@
             <artifactId>mail</artifactId>
             <version>1.4</version>
         </dependency>
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>${commons.codec.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit.jupiter.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven.shared</groupId>
+            <artifactId>maven-invoker</artifactId>
+            <version>${org.apache.maven.shared.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.xmlgraphics</groupId>
+            <artifactId>fop</artifactId>
+            <version>${org.apache.xmlgraphics.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.openhtmltopdf</groupId>
+            <artifactId>openhtmltopdf-pdfbox</artifactId>
+            <version>${com.openhtmltopdf.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.benf</groupId>
+            <artifactId>cfr</artifactId>
+            <version>${org.benf.version}</version>
+        </dependency>
     </dependencies>
 
-    <properties>
-        <maven.compiler.source>18</maven.compiler.source>
-        <maven.compiler.target>18</maven.compiler.target>
-    </properties>
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering> <!-- Enable filtering -->
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>${project.parent.version}</version>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${maven.surefire.version}</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.junit.platform</groupId>
+                        <artifactId>junit-platform-surefire-provider</artifactId>
+                        <version>${org.junit.platform.version}</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <additionalClasspathElements>
+                        <additionalClasspathElement>src/test/java/</additionalClasspathElement>
+                    </additionalClasspathElements>
+                    <testFailureIgnore>true</testFailureIgnore>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-report-plugin</artifactId>
+                <version>${maven.surefire.report.plugin.version}</version>
+            </plugin>
+        </plugins>
+    </reporting>
 
 </project>

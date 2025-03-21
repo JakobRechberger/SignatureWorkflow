@@ -33,6 +33,7 @@ import java.util.zip.ZipOutputStream;
 
 import static sha256.SHA256Methods.generateSHA256Hash;
 import static sha256.SHA256Methods.hashToHexString;
+import static testexecutor.ExecuteTest.executeTestsAndProcessReport;
 
 @RestController
 @RequestMapping("/api")
@@ -61,7 +62,7 @@ public class WorkflowInitialization {
             System.out.println("End Date: " + endDate);
             //Step 1: get the current state of repository
             cloneGitRepository(repoUrl, tempDir);
-            //Step 2: compress state into zip file
+            executeTestsAndProcessReport(tempDir);
             File zipFile = File.createTempFile("zipped_repository", ".zip");
             zipDirectory(tempDir.toPath(), zipFile.toPath());
             byte[] zipFileData = Files.readAllBytes(zipFile.toPath());
