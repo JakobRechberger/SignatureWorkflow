@@ -50,7 +50,8 @@ public class WorkflowInitialization {
     public ResponseEntity<String> handleGitRepository(
             @RequestParam("repoUrl") String repoUrl,
             @RequestParam("startDate") String startDate,
-            @RequestParam("endDate") String endDate) {
+            @RequestParam("endDate") String endDate,
+            @RequestParam("executeTests") boolean executeTests ){
         File tempDir = null;
         try {
 
@@ -60,19 +61,17 @@ public class WorkflowInitialization {
             }
             System.out.println("Start Date: " + startDate);
             System.out.println("End Date: " + endDate);
-            //Step 1: get the current state of repository
             cloneGitRepository(repoUrl, tempDir);
-            executeTestsAndProcessReport(tempDir);
+            if(executeTests){
+                executeTestsAndProcessReport(tempDir);
+            }
             File zipFile = File.createTempFile("zipped_repository", ".zip");
             zipDirectory(tempDir.toPath(), zipFile.toPath());
             byte[] zipFileData = Files.readAllBytes(zipFile.toPath());
-            //Step 3: calculate hash value of zip file
             byte[] zipFileHash = generateSHA256Hash(zipFileData);
             System.out.println(hashToHexString(zipFileHash));
-            //Step 4: get all contributors in given timeframe
             Set<String> contributors = getGitContributors(tempDir, startDate, endDate);
             String repositoryName = getGitRepositoryName(tempDir);
-            //Step 5: set up review process: mail to contributors with hash value, generate unique links
             ProjectRequest payload = new ProjectRequest(repositoryName, hashToHexString(zipFileHash), zipFileData, contributors.stream().toList());
             projectService.createProjectWithUsers(payload);
 
