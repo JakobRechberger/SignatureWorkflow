@@ -1,6 +1,6 @@
 # SignatureWorkflow
 This project handles the backend for the research of optimizing testing and auditing of software projects.
-The corresponding Frontend can be found [here](https://github.com/JakobRechberger/signaturewebsite)
+The corresponding Frontend can be found [here](https://anonymous.4open.science/r/signaturewebsite-BDFD)
 ### Functionality
 #### Supervisor Input:
 - selecting a git repository and timeframe
@@ -17,6 +17,6 @@ The corresponding Frontend can be found [here](https://github.com/JakobRechberge
 - git installed
 - go to application.properties and enter mysql db credentials and db connection and gmail setup for sending mail functionality
 - to use email services uncomment line 56 at /database/service/ProjectService.java and enter your mail address again at line 23 at /database/service/EmailService.java
-- start a development server on localhost:3000 for the [frontend](https://github.com/JakobRechberger/signaturewebsite) and start the Spring Application
+- start a development server on localhost:3000 for the [frontend](https://anonymous.4open.science/r/signaturewebsite-BDFD) and start the Spring Application
 
 
