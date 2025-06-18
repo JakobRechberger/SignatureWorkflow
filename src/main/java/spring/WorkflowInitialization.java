@@ -5,11 +5,8 @@ import database.models.Link;
 import database.models.Project;
 import database.models.User;
 import database.models.UserDTO;
-import database.service.LinkService;
-import database.service.ProjectRequest;
-import database.service.ProjectService;
+import database.service.*;
 
-import database.service.UserService;
 import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -73,7 +70,7 @@ public class WorkflowInitialization {
             Set<String> contributors = getGitContributors(tempDir, startDate, endDate);
             String repositoryName = getGitRepositoryName(tempDir);
             ProjectRequest payload = new ProjectRequest(repositoryName, hashToHexString(zipFileHash), zipFileData, contributors.stream().toList());
-            projectService.createProjectWithUsers(payload);
+            //projectService.createProjectWithUsers(payload);
 
 
 
@@ -119,7 +116,15 @@ public class WorkflowInitialization {
     @GetMapping("/supervisor/resendEmail")
     public ResponseEntity<String> resendEmailToContributor(@RequestParam("email") String email, @RequestParam("projectName") String projectName){
         List<User> users = userService.getUserByEmail(email);
-
+        List<Link> links = linkService.getLinksByUserID(users.get(0).getId());
+        Project project = projectService.getProjectByName(projectName).get(0);
+        Optional<Link> link1 = links.stream()
+                .filter(link -> link.getProject().getId().equals(project.getId()))
+                .findFirst();
+        Link link = link1.orElseThrow(()-> new RuntimeException("Link not found"));
+        User user = link.getUser();
+        System.out.println(user.getEmail() + link.getToken() + project.getFileName());
+        //projectService.sendEmail(user, link, project);
         return ResponseEntity.ok("ok");
     }
 

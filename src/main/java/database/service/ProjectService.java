@@ -49,13 +49,16 @@ public class ProjectService {
             link.setProject(project);
             link.setExpiryTimestamp(LocalDateTime.now().plusDays(7));
             linkRepository.save(link);
-            String downloadUrl = "http://localhost:3000/contributor?token=" + token;
-            System.out.println(downloadUrl);
-            String subject = "Verification needed for project";
-            String text = "Hello,\n please see the link:\n" + downloadUrl + "\nto verify the project. \nUse the hash for verfication: " + project.getFileHash();
-            //emailService.sendEmail("your-email@mail.com", subject, text);
-            //replace hardcoded email string with user.getEmail() to send mail to the actual contributors (not recommended for research -> use your own mail to get all links created)
+            sendEmail(user, link, project);
         }
+    }
+    public void sendEmail(User user, Link link, Project project){
+        String downloadUrl = "http://localhost:3000/contributor?token=" + link.getToken();
+        System.out.println(downloadUrl);
+        String subject = "Verification needed for project";
+        String text = "Hello,\n please see the link:\n" + downloadUrl + "\nto verify the project. \nUse the hash for verfication: " + project.getFileHash();
+        emailService.sendEmail("your-email@mail.com", subject, text);
+        //replace hardcoded email string with user.getEmail() to send mail to the actual contributors (not recommended for research -> use your own mail to get all links created)
     }
     public List<Project> getProjectByName(String fileName) {
         return projectRepository.findByProjectName(fileName);

@@ -23,7 +23,7 @@ public class LinkService {
     public List<Link> getLinksByProjectID(Long id) {
         return linkRepository.findLinksByProjectID(id);
     }
-    public Link getLinkByUserID(Long id) {
-        return linkRepository.findLinkByUserID(id);
+    public List<Link> getLinksByUserID(Long id) {
+        return linkRepository.findLinksByUserID(id);
     }
 }
